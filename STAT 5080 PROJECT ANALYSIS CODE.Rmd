@@ -1,0 +1,171 @@
+
+---
+title: "Analysis"
+date: "4/8/2022"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+dat <- read.csv("~/Documents/BGSU/Spring 2022/stat 5080 Experimental design/Project/data.csv", stringsAsFactors = T,fileEncoding = 'UTF-8-BOM')
+dat$difficulty <- relevel(dat$difficulty, "50cc")
+```
+
+# ANOVA
+```{r}
+aov_out <- aov(formula = time ~ numPlayers*difficulty*sound + participant,
+               data = dat)
+summary(aov_out)
+```
+
+# Assumption Checking
+```{r echo=FALSE}
+# svg("C:/Users/hadamul/OneDrive/Graduate school/Semester 4/Experimental Design/Experimental-Design-Final-Project/Plots/qq.svg",
+#     width = 7.291667, height = 4.500000)
+qqnorm(aov_out$residuals)
+qqline(aov_out$residuals)
+# dev.off()
+```
+
+```{r}
+# svg("C:/Users/hadamul/OneDrive/Graduate school/Semester 4/Experimental Design/Experimental-Design-Final-Project/Plots/factorEqVar.svg",
+#     width = 7.291667, height = 4.500000)
+par(mfrow = c(2,2),
+    mar = c(2,0,0,0),
+    mgp = c(0,.5,0),
+    omi = c(0,.25,0,0))
+plot(x = dat$numPlayers, y = aov_out$residuals,
+     xlab = "", ylab = "Residuals")
+plot(x = dat$difficulty, y = aov_out$residuals,
+     xlab = "", ylab = "", yaxt = "n")
+plot(x = dat$sound, y = aov_out$residuals,
+     xlab = "", ylab = "Residuals")
+plot(x = dat$participant, y = aov_out$residuals,
+     xlab = "", ylab = "Residuals", yaxt = "n")
+# dev.off()
+```
+
+
+```{r echo=FALSE}
+# svg("C:/Users/hadamul/OneDrive/Graduate school/Semester 4/Experimental Design/Experimental-Design-Final-Project/Plots/Res_v_FitEqVar.svg",
+#     width = 7.291667, height = 4.500000)
+plot(aov_out$fitted.values,aov_out$residuals,xlab="Fitted Lap Times",ylab="Residuals",
+     main="Residuals vs. Fitted Lap Times")
+abline(h=0)
+# dev.off()
+```
+
+
+```{r echo=FALSE}
+# svg("C:/Users/hadamul/OneDrive/Graduate school/Semester 4/Experimental Design/Experimental-Design-Final-Project/Plots/ResidualIndex.svg",
+#     width = 7.291667, height = 4.500000)
+plot(aov_out$residuals,ylab="Residuals",type="l",
+     main="Residuals vs. Index", xlim = c(1,72))
+# dev.off()
+```
+
+```{r echo=FALSE}
+res_ind_df <- data.frame(index = 1:length(aov_out$residuals),
+                          res = aov_out$residuals)
+res_ind_lm1 <- lm(res~index, res_ind_df[1:18,])
+res_ind_lm2 <- lm(res~index, res_ind_df[(18+1):(18*2),])
+res_ind_lm3 <- lm(res~index, res_ind_df[(18*2+1):(18*3),])
+res_ind_lm4 <- lm(res~index, res_ind_df[(18*3+1):(18*4),])
+# svg("C:/Users/hadamul/OneDrive/Graduate school/Semester 4/Experimental Design/Experimental-Design-Final-Project/Plots/ResidualIndexBlock.svg",
+#     width = 7.291667, height = 4.500000)
+plot(aov_out$residuals,ylab="Residuals",type="l",
+     main="Residuals vs. Index", xlim = c(1,72))
+abline(v= 18)
+abline(v= 18*2)
+abline(v= 18*3)
+clip(1, 18, -100, 100)
+abline(res_ind_lm1, xlim = 1:18)
+clip(18, 18*2, -100, 100)
+abline(res_ind_lm2, xlim = 1:18)
+clip(18*2, 18*3, -100, 100)
+abline(res_ind_lm3, xlim = 1:18)
+clip(18*3, 18*4, -100, 100)
+abline(res_ind_lm4, xlim = 1:18)
+# dev.off()
+```
+
+```{r}
+MASS::boxcox(aov_out)
+```
+
+Plot Interpretation: For the Box-Cox transformation, a λ value of 1 is equivalent to using the original data. from the Box-Cox plot, we can clearly see that optimum $\lambda$ is close to 1. Therefore no transformation is required.
+from the Box-Cox plot, we can clearly see that the 95% confidence interval includes 1 in the range therefore, no transformation is required for our data
+
+
+
+
+
+# Interaction
+```{r}
+interaction.plot(x.factor = dat$sound, trace.factor = dat$difficulty, response = dat$time)
+interaction.plot(x.factor = dat$difficulty, trace.factor = dat$sound, response = dat$time,
+                 fixed = T,)
+```
+
+
+# Check the interactions charts for any interaction that may be hidden by the error
+
+# Looking at the Tukey comparisons for difficilty
+```{r}
+TukeyHSD(aov_out, "difficulty",ordered = T)
+bruh <- TukeyHSD(x = aov_out,
+                 which = "difficulty",
+                 ordered = T)$difficulty %>% 
+  apply(2,function(i) as.numeric(i)) %>% as.data.frame()
+difficultyTukey <- cbind(comparison = c("100cc->150cc",
+                                        "50cc->150cc",
+                                        "50cc->100cc"),
+                         bruh)
+```   
+- 150cc is about 12.3 seconds faster than 100cc
+- 100cc is about 4.8 seconds faster than 50cc
+- 150cc is about 13.3 seconds faster than 50cc
+
+```{r}
+ggplot(data = difficultyTukey) +
+  geom_bar(mapping = aes(x =  comparison, y = diff), stat="identity") +
+  geom_errorbar(mapping = aes(x = comparison, ymin = lwr, ymax = upr)) +
+   coord_flip()
+```
+
+
+# A case for the polynomial comparison for difficulty
+
+Normal everyday players see this as 3 distinct levels, but modders (people who access and mod the game files) knows that there is a range of values that controls the speed of the carts, so to them, there are a range of values that one can use for the "difficulty".
+
+
+
+
+
+
+50cc 
+speed <- 10
+
+
+100cc 
+speed <- 20
+
+
+150cc 
+speed <- 30
+
+
+speed <- 1
+speed <- 15
+speed <- 300000

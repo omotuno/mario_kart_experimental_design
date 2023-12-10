@@ -19,7 +19,9 @@ This project performs an analysis of variance (ANOVA) experiment evaluating whet
 
 <img width="985" alt="Screenshot 2023-12-10 at 4 41 50 PM" src="https://github.com/omotuno/mario_kart_experimental_design/assets/65866718/b9b5a11b-51d0-44d4-9771-e965e164a8b8">
 
- The full statistical analysis and R code for plots and models is contained in the experimental_design.html file.
+ The full statistical analysis and R code for plots and models is contained in the  [file](https://github.com/omotuno/mario_kart_experimental_design/blob/main/experimental_design.html).
+
+ The pdf file with codes and information can be found [here]()
 
 ## Key findings:
 
